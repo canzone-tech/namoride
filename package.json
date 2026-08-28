@@ -15,7 +15,10 @@
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "format:check": "npm run format:check --workspaces --if-present",
-    "verify": "npm run format:check && npm run lint && npm run test && npm run build",
+    "prisma:validate": "npm --workspace @namoride/api run prisma:validate",
+    "prisma:generate": "npm --workspace @namoride/api run prisma:generate",
+    "db:status": "npm --workspace @namoride/api run db:status",
+    "verify": "npm run prisma:validate && npm run format:check && npm run lint && npm run test && npm run build",
     "dev:api": "npm --workspace @namoride/api run start:dev",
     "infra:up": "docker compose up -d mysql redis",
     "infra:down": "docker compose down"
