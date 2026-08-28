@@ -1,0 +1,26 @@
+{
+  "name": "namoride",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Namo Ride production monorepo",
+  "engines": {
+    "node": ">=24.20.0 <25"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "format:check": "npm run format:check --workspaces --if-present",
+    "prisma:validate": "npm --workspace @namoride/api run prisma:validate",
+    "prisma:generate": "npm --workspace @namoride/api run prisma:generate",
+    "db:status": "npm --workspace @namoride/api run db:status",
+    "verify": "npm run prisma:validate && npm run prisma:generate && npm run format:check && npm run lint && npm run test && npm run build",
+    "dev:api": "npm --workspace @namoride/api run start:dev",
+    "infra:up": "docker compose up -d mysql redis",
+    "infra:down": "docker compose down"
+  }
+}

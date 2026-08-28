@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  api-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: namoride
+          MYSQL_USER: namoride
+          MYSQL_PASSWORD: namoride_local_password
+          MYSQL_ROOT_PASSWORD: namoride_root_local_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -unamoride -pnamoride_local_password --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+      redis:
+        image: redis:8.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create local CI environment
+        run: cp .env.example .env
+
+      - name: Verify workspace
+        run: npm run verify
+
+      - name: Start API
+        run: |
+          npm --workspace @namoride/api run start > /tmp/namoride-api.log 2>&1 &
+          echo $! > /tmp/namoride-api.pid
+
+      - name: Smoke test liveness and readiness
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/api/v1/health/live > /tmp/live.json; then
+              break
+            fi
+            sleep 1
+          done
+
+          curl --fail --silent http://127.0.0.1:3000/api/v1/health/live
+          curl --fail --silent http://127.0.0.1:3000/api/v1/health
+
+      - name: Print API log on failure
+        if: failure()
+        run: cat /tmp/namoride-api.log || true
